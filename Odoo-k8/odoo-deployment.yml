@@ -1,0 +1,75 @@
+# odoo-deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: odoo
+  namespace: odoo
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: odoo
+  template:
+    metadata:
+      labels:
+        app: odoo
+    spec:
+      securityContext:
+        runAsUser: 101
+        runAsGroup: 101
+        fsGroup: 101
+        
+      containers:
+      - name: odoo
+        image: odoo:17
+
+        ports:
+        - containerPort: 8069
+        - containerPort: 8072
+        env:
+        - name: HOST
+          value: "postgres"
+        - name: USER
+          value: "odoo"
+        - name: PASSWORD
+          value: "postgres"
+        
+        resources:
+            requests:
+              memory: "6Gi"
+              cpu: "4"
+            limits:
+              memory: "8Gi"
+              cpu: "4"
+
+        volumeMounts:
+        - name: odoo-data
+          mountPath: /var/lib/odoo
+
+
+        - name: odoo-conf
+          mountPath: /etc/odoo/odoo.conf
+          subPath: odoo.conf
+
+
+        - name: enterprise-addons
+          mountPath: /mnt/extra-addons/enterprise-addons
+        - name: custom-addons
+          mountPath: /mnt/extra-addons/custom-addons
+
+
+      volumes:
+      - name: odoo-data
+        persistentVolumeClaim:
+          claimName: odoo-data-pvc
+
+      - name: odoo-conf
+        configMap:
+          name: odoo-config
+      - name: enterprise-addons
+        persistentVolumeClaim:
+          claimName: enterprise-addons-pvc
+      - name: custom-addons
+        persistentVolumeClaim:
+          claimName: custom-addons-pvc
+

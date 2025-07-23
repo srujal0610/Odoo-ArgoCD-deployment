@@ -1,0 +1,41 @@
+  # odoo-conf-configmap.yaml
+  apiVersion: v1
+  kind: ConfigMap
+  metadata:
+    name: odoo-config
+    namespace: odoo
+  data:
+    odoo.conf: |
+      [options]
+      addons_path = /mnt/extra-addons/enterprise-addons,/mnt/extra-addons/custom-addons,/usr/lib/python3/dist-packages/
+      data_dir = /var/lib/odoo
+      admin_passwd = admin_password
+      csv_internal_sep = ,
+      db_maxconn = 64
+      db_port = 5432
+      db_template = template1
+      dbfilter = .*
+      debug_mode = False
+      email_from = False
+      limit_memory_hard = 1677721600
+      limit_memory_soft = 6291456000
+      limit_request = 8192
+      limit_time_cpu = 600
+      limit_time_real = 1200
+      list_db = True
+      log_db = False
+      log_handler = :INFO
+      log_level = info
+      logfile = False
+      longpolling_port = 8072
+      max_cron_threads = 2
+      osv_memory_age_limit = 1.0
+      osv_memory_count_limit = False
+      smtp_password = False
+      smtp_port = 25
+      smtp_server = localhost
+      smtp_ssl = False
+      smtp_user = False
+      workers = 0
+      xmlrpc = True
+      xmlrpc_interface =
