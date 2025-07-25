@@ -11,7 +11,6 @@ pipeline {
     }
 
     environment {
-        TMP_TARBALL = 'addons.tar.gz'
         ADDONS_DIR = 'custom-addons'
     }
 
@@ -36,13 +35,10 @@ pipeline {
 
         stage('Copy Addons to Pod') {
             steps {
-                script {
-                    def podName = sh(script: "kubectl get pod -n ${params.KUBE_NAMESPACE} -l app=${params.KUBE_DEPLOYMENT} -o jsonpath='{.items[0].metadata.name}'", returnStdout: true).trim()
-                    echo "Copying custom addons to pod: ${podName}"
-                    sh """
-                        kubectl cp ${params.CUSTOM_ADDONS_DIR} ${params.KUBE_NAMESPACE}/${podName}:/mnt/extra-addons/custom-addons
-                    """
-                }
+                echo "📁 Copying ${env.ADDONS_DIR} to ${params.MOUNT_PATH} in pod ${env.ODOO_POD}"
+                sh """
+                    kubectl cp ${env.ADDONS_DIR} ${params.K8S_NAMESPACE}/${env.ODOO_POD}:${params.MOUNT_PATH}
+                """
             }
         }
 
