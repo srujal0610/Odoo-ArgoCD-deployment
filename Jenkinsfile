@@ -6,11 +6,13 @@ pipeline {
         string(name: 'BRANCH', defaultValue: 'main', description: 'Branch name to pull')
         string(name: 'K8S_NAMESPACE', defaultValue: 'odoo', description: 'Kubernetes namespace')
         string(name: 'POD_LABEL', defaultValue: 'app=odoo', description: 'Pod label selector')
+        string(name: 'KUBE_DEPLOYMENT', defaultValue: 'odoo', description: 'Deployment Name')
         string(name: 'MOUNT_PATH', defaultValue: '/mnt/extra-addons/custom-addons', description: 'Target path inside Odoo pod')
     }
 
     environment {
         TMP_TARBALL = 'addons.tar.gz'
+        ADDONS_DIR = 'custom-addons'
     }
 
     stages {
@@ -34,23 +36,19 @@ pipeline {
 
         stage('Copy Addons to Pod') {
             steps {
-                sh '''
-                echo "📦 Creating tarball..."
-                tar czf ${TMP_TARBALL} *
-
-                echo "📤 Copying tarball to pod..."
-                kubectl cp ${TMP_TARBALL} ${params.K8S_NAMESPACE}/${ODOO_POD}:/tmp/${TMP_TARBALL}
-
-                echo "📂 Extracting into ${params.MOUNT_PATH}..."
-                kubectl exec -n ${params.K8S_NAMESPACE} ${ODOO_POD} -- sh -c "mkdir -p ${params.MOUNT_PATH} && tar xzf /tmp/${TMP_TARBALL} -C ${params.MOUNT_PATH} && rm /tmp/${TMP_TARBALL}"
-                '''
+                script {
+                    def podName = sh(script: "kubectl get pod -n ${params.KUBE_NAMESPACE} -l app=${params.KUBE_DEPLOYMENT} -o jsonpath='{.items[0].metadata.name}'", returnStdout: true).trim()
+                    echo "Copying custom addons to pod: ${podName}"
+                    sh """
+                        kubectl cp ${params.CUSTOM_ADDONS_DIR} ${params.KUBE_NAMESPACE}/${podName}:/mnt/extra-addons/custom-addons
+                    """
+                }
             }
         }
 
-        stage('Restart Odoo Pod (Optional)') {
+        stage('Restart Odoo deployment') {
             steps {
-                input message: 'Do you want to restart the Odoo pod to apply new addons?'
-                sh "kubectl delete pod ${ODOO_POD} -n ${params.K8S_NAMESPACE}"
+                sh "kubectl rollout restart deployment/${params.KUBE_DEPLOYMENT} -n ${params.K8S_NAMESPACE}"
             }
         }
     }
